@@ -25,6 +25,9 @@ export default class SquadSession {
         // Remove the session query parameter from the URL
         App.updateUrlParams({ session: null });
 
+        // Ensure local state isn't locked in syncing mode
+        App.applyingSessionState = false;
+
         // Update UI
         $(".btn-session").removeClass("active");
         leaveSessionTooltips.disable();
@@ -83,6 +86,9 @@ export default class SquadSession {
         case "SESSION_JOINED": {
             console.debug("Successfully joined session: " + data.sessionId);
 
+            // Prevent URL parameters from overriding the session state while we sync
+            App.applyingSessionState = true;
+
             // Update MAP with custom event to skip the broadcast
             App.MAP_SELECTOR.val(data.mapState.activeMap).trigger($.Event("change", { broadcast: false }));
 
@@ -138,12 +144,17 @@ export default class SquadSession {
                     });
 
                     // Load Factions and Units
-                    if (!data.mapState.teams || data.mapState.teams.length === 0) return;
+                    if (!data.mapState.teams || data.mapState.teams.length === 0) {
+                        App.applyingSessionState = false;
+                        return;
+                    }
 
                     App.FACTION1_SELECTOR.val(data.mapState.teams[0][0]).trigger($.Event("change", { broadcast: false }));
                     App.FACTION2_SELECTOR.val(data.mapState.teams[1][0]).trigger($.Event("change", { broadcast: false }));
                     App.UNIT1_SELECTOR.val(data.mapState.teams[0][1]).trigger($.Event("change", { broadcast: false }));
                     App.UNIT2_SELECTOR.val(data.mapState.teams[1][1]).trigger($.Event("change", { broadcast: false }));
+
+                    App.applyingSessionState = false;
                 });
             });
 

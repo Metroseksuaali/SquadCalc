@@ -43,6 +43,7 @@ export default class SquadCalc {
         this.UNIT1_SELECTOR = $(".dropbtn9");
         this.UNIT2_SELECTOR = $(".dropbtn11");
         this.session = false;
+        this.applyingSessionState = false;
         this.version = packageInfo.version;
     }
 
@@ -96,9 +97,9 @@ export default class SquadCalc {
             } else {
                 this.updateUrlParams({ map: this.minimap.activeMap.name });
             }
-            
+
             // Refresh layer selector
-            this.loadLayers();
+            this.loadLayers({ allowUrlLayer: broadcast });
 
             if (broadcast && this.session.ws && this.session.ws.readyState === WebSocket.OPEN) {
                 this.session.ws.send(
@@ -191,7 +192,7 @@ export default class SquadCalc {
     /**
      * Retrieve list of available layers name from squadcalc api
      */
-    loadLayers() {
+    loadLayers({ allowUrlLayer = true } = {}) {
         this.minimap.spin(true, this.minimap.spinOptions);
         const currentUrl = new URL(window.location);
         $("#layerSelector").hide();
@@ -214,8 +215,10 @@ export default class SquadCalc {
             layers.forEach((layer) => { this.LAYER_SELECTOR.append(`<option value=${layer.rawName}>${layer.shortName}</option>`);});
             
 
-            // If URL has a "layer" parameter
-            if (currentUrl.searchParams.has("layer") && !currentUrl.searchParams.has("session")) {
+            // If URL has a "layer" parameter and we're allowed to use it
+            const shouldUseUrlLayer = allowUrlLayer && !this.applyingSessionState && currentUrl.searchParams.has("layer");
+
+            if (shouldUseUrlLayer) {
                 const urlLayerName = currentUrl.searchParams.get("layer").toLowerCase().replaceAll(" ", "");
             
                 // Normalize option text by removing any extra spaces around the "V"
