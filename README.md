@@ -22,6 +22,86 @@
 
 [SquadCalc.app](https://squadcalc.app/) – The Ultimate In-Game Companion for [Squad](https://joinsquad.com/)!
 
+</br>
+
+# <b>🎯 Fork addition — Terrain-aware Range Fan</b>
+
+> **This is a community fork of [SquadCalc](https://github.com/sh4rkman/SquadCalc).**
+> It adds a *range fan* overlay that shows where a placed indirect-fire weapon
+> (mortar, Hell Cannon, UB-32, …) can **actually land a shot** — accounting for
+> the projectile arc against terrain **and structures**, not just a flat
+> max-range circle.
+
+**How to use it:** place a weapon marker as usual; the overlay is drawn around it.
+
+| Colour | Meaning |
+|---|---|
+| 🟢 green | a valid firing solution lands here |
+| 🔴 red | in range, but terrain/buildings mask every allowed arc |
+| 🟠 orange | inside the weapon's minimum range / elevation limit |
+| ⚪ grey | out of range |
+
+It recomputes when you place a weapon, change the weapon type, or finish dragging
+the marker. This makes the high-arc vs low-arc difference visible: a mortar lobs
+over most terrain (mostly green), while a flat-shooting UB-32 is blocked into
+radial "shadows" behind hills and buildings.
+
+<details>
+  <summary><b>How it works</b></summary>
+  </br>
+
+  For each cell within range it solves the launch elevation with the same
+  closed-form as SquadCalc's own <code>squadFiringSolution.js</code>, then walks
+  the resulting parabola against the heightmap. A cell is masked if the surface
+  reaches the arc anywhere before the target. See <code>src/js/squadRangeFan.js</code>
+  and the write-up in <a href="https://github.com/Metroseksuaali/SquadCalc/pull/2">PR #2</a>.
+
+  </br>
+</details>
+
+<details>
+  <summary><b>Heightmap data — required for accurate masking</b></summary>
+  </br>
+
+  The overlay reads elevation that includes <b>buildings, walls, bridges and
+  rocks</b>, from the
+  <a href="https://github.com/Metroseksuaali/SquadHeight">SquadHeight</a> project's
+  true-surface heightmaps.
+
+  <ul>
+    <li>It falls back to SquadCalc's bundled 500×500 <code>heightmap.json</code>,
+      but at 5–8 m/cell tall buildings smear into nearby streets and under-mask.</li>
+    <li>For accurate results it prefers a <b>full-resolution 1 m surface</b>
+      decoded from SquadHeight's 16-bit grayscale PNG export
+      (<code>heightmap_hd.png</code> + <code>hd_meta.json</code>, served next to
+      each map's <code>heightmap.json</code>).</li>
+  </ul>
+
+  <b>Get the data here:</b>
+  <a href="https://github.com/Metroseksuaali/SquadHeight">github.com/Metroseksuaali/SquadHeight</a>
+  → Releases → <code>heightmap_images_16bit_png.zip</code>. Without it the overlay
+  silently falls back to the 500 grid. See the header of
+  <code>src/js/squadHeightmapHD.js</code> for the exact file paths it fetches.
+
+  </br>
+</details>
+
+<details>
+  <summary><b>Limitations (be honest with players)</b></summary>
+  </br>
+
+  <ul>
+    <li><b>2.5D surface:</b> buildings are solid ground-to-roof — no windows,
+      doorways, interiors or under-bridge shots. A roof impact counts as a hit on
+      the roof, not the street beside it.</li>
+    <li><b>Foliage is not modelled</b> — the overlay sees through forests (hard
+      masking only, not concealment).</li>
+    <li><code>0</code>-height plateaus are water / out-of-play, not real ground.</li>
+  </ul>
+
+  </br>
+</details>
+
 
 </br>
 </br>
