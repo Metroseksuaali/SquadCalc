@@ -3,6 +3,7 @@ import "./libs/leaflet-visual-click.js";
 import { Marker, Circle, CircleMarker, Popup, Polygon, Icon } from "leaflet";
 import i18next from "i18next";
 import { sendMarkerData } from "./squadCalcAPI.js";
+import SquadRangeFan from "./squadRangeFan.js";
 import { v4 as uuidv4 } from "uuid";
 
 
@@ -148,6 +149,10 @@ export const squadWeaponMarker = squadMarker.extend({
             this.rangeMarker.setStyle({opacity: 0});
         }
 
+        // Terrain-aware reachability overlay (local SquadHeight experiment)
+        this.rangeFan = new SquadRangeFan(this.map, this);
+        this.rangeFan.update();
+
         // Custom events handlers
         this.on("click", this._handleClick, this);
         this.on("drag", this._handleDrag, this);
@@ -228,7 +233,8 @@ export const squadWeaponMarker = squadMarker.extend({
             this.rangeMarker.setStyle(this.maxDistCircleOn);
             if (this.precisionRangeMarker) this.precisionRangeMarker.remove();
         }
-        
+
+        if (this.rangeFan) this.rangeFan.update();
         this.updateIcon();
     },
 
@@ -463,6 +469,9 @@ export const squadWeaponMarker = squadMarker.extend({
         // Mini-circle and position appears on dragstart
         this.miniCircle.setStyle({opacity: 1});
         if (App.userSettings.weaponDrag) { this.posPopUp.openOn(this.map); }
+
+        // Recomputing the fan on every drag frame would be too slow
+        if (this.rangeFan) this.rangeFan.clear();
     },
 
     _handleDragEnd: function (broadcast = true) {
@@ -496,6 +505,8 @@ export const squadWeaponMarker = squadMarker.extend({
         if (App.userSettings.realMaxRange) {
             this.updateWeaponMaxRange();
         }
+
+        if (this.rangeFan) this.rangeFan.update();
 
         // FOB range / mini-circle and position disapear on dragend
         this.fobCircle.setStyle({opacity: 0});
@@ -547,6 +558,7 @@ export const squadWeaponMarker = squadMarker.extend({
         this.fobCircle.removeFrom(this.map.markersGroup).remove();
         this.posPopUp.removeFrom(this.map.markersGroup).remove();
         if (this.precisionRangeMarker) { this.precisionRangeMarker.remove(); }
+        if (this.rangeFan) { this.rangeFan.clear(); }
         this.removeFrom(this.map.markersGroup).removeFrom(this.map.activeWeaponsMarkers);
         this.remove();
 
